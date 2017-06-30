@@ -1,4 +1,8 @@
 use error::*;
+use futures::{self, IntoFuture};
+use hyper;
+use hyper::header::ContentLength;
+use hyper::server::{Request, Response, Service};
 use prometheus::{self, CounterVec, Encoder, Registry, TextEncoder};
 
 pub struct Metrics {
@@ -52,5 +56,33 @@ impl Metrics {
         self.encode().and_then(|bytes| {
             String::from_utf8(bytes).chain_err(|| "invalid UTF8")
         })
+    }
+}
+
+impl Service for Metrics {
+    type Request = Request;
+    type Response = Response;
+    type Error = hyper::Error;
+
+    type Future = futures::future::FutureResult<Self::Response, Self::Error>;
+
+    fn call(&self, _req: Request) -> Self::Future {
+        self.encode()
+            .map(|body| {
+                Response::new()
+                    .with_header(ContentLength(body.len() as u64))
+                    .with_body(body)
+            })
+            .or_else(|e| {
+                let body = format!("{}", e);
+
+                let resp = Response::new()
+                    .with_status(hyper::StatusCode::InternalServerError)
+                    .with_header(ContentLength(body.len() as u64))
+                    .with_body(body);
+
+                Ok(resp)
+            })
+            .into_future()
     }
 }

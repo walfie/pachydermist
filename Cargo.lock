@@ -4,6 +4,7 @@ version = "0.1.0"
 dependencies = [
  "error-chain 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hyper 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "olifants 0.1.0 (git+https://github.com/walfie/olifants?rev=4a54d2ef5e7473fe84f8abdce3351db81db16750)",
  "prometheus 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.0.5 (registry+https://github.com/rust-lang/crates.io-index)",
