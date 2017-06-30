@@ -89,7 +89,11 @@ quick_main!(|| -> Result<()> {
             });
 
         if let Err(e) = core.run(timeline) {
-            println!("Encountered error: {}", e);
+            // TODO: stderr
+            println!(
+                "Encountered error:\n{}",
+                error_chain::ChainedError::display(&e)
+            );
         }
 
         // TODO: Exponential backoff
