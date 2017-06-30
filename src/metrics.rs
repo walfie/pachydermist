@@ -51,12 +51,6 @@ impl Metrics {
 
         Ok(buffer)
     }
-
-    pub fn encode_string(&self) -> Result<String> {
-        self.encode().and_then(|bytes| {
-            String::from_utf8(bytes).chain_err(|| "invalid UTF8")
-        })
-    }
 }
 
 impl Service for Metrics {

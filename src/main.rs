@@ -14,39 +14,33 @@ mod error;
 mod args;
 mod metrics;
 
+use args::Args;
 use error::*;
 use futures::{Future, Stream};
 use hyper::server::Http;
 use metrics::Metrics;
 use olifants::Client;
 use std::rc::Rc;
-use structopt::StructOpt;
 use tokio_core::reactor::Core;
 
 const CRATE_NAME: &'static str = env!("CARGO_PKG_NAME");
 
 quick_main!(|| -> Result<()> {
-    let opt = args::Opt::from_args();
+    let args = Args::init()?;
 
-    let metrics = Rc::new(Metrics::create(CRATE_NAME, &opt.instance_url).chain_err(
+    let metrics = Rc::new(Metrics::create(CRATE_NAME, &args.instance_url).chain_err(
         || "metrics initialization failed",
     )?);
 
     let mut core = Core::new().chain_err(|| "could not create Core")?;
-
     let handle = core.handle();
-    let listener = {
-        let addr = format!("{}:{}", opt.bind, opt.port).parse().chain_err(
-            || "invalid address",
-        )?;
 
-        tokio_core::net::TcpListener::bind(&addr, &handle)
-            .chain_err(|| "failed to bind TCP listener")?
-    };
-
-    let client = Client::new(&core.handle(), CRATE_NAME).chain_err(
+    let client = Client::new(&handle, CRATE_NAME).chain_err(
         || "could not create Client",
     )?;
+
+    let listener = tokio_core::net::TcpListener::bind(&args.bind_address, &handle)
+        .chain_err(|| "failed to bind TCP listener")?;
 
     let server_metrics = metrics.clone();
     let server = listener
@@ -61,8 +55,8 @@ quick_main!(|| -> Result<()> {
 
     let timeline = client
         .timeline(
-            &opt.instance_url,
-            opt.access_token,
+            &args.instance_url,
+            args.access_token,
             olifants::timeline::Endpoint::Local,
         )
         .map_err(|e| Error::with_chain(e, "client error"))
@@ -75,6 +69,12 @@ quick_main!(|| -> Result<()> {
 
             Ok(())
         });
+
+    println!("Connecting to stream at {}", args.instance_url);
+    println!(
+        "Prometheus metrics reporter listening on {}",
+        args.bind_address
+    );
 
     core.handle().spawn(server);
     core.run(timeline).chain_err(|| "timeline failed")
