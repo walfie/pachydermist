@@ -33,9 +33,8 @@ quick_main!(|| -> Result<()> {
         .trim_left_matches("http://")
         .to_string();
 
-    let metrics = Rc::new(Metrics::create(CRATE_NAME, short_instance_url).chain_err(
-        || "metrics initialization failed",
-    )?);
+    let metrics = Rc::new(Metrics::create(&args.namespace, short_instance_url)
+        .chain_err(|| "metrics initialization failed")?);
 
     let mut core = Core::new().chain_err(|| "could not create Core")?;
     let handle = core.handle();

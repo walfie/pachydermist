@@ -23,6 +23,10 @@ struct ArgsOpt {
     #[structopt(long = "timeline", help = "Timeline type", default_value = "local",
                 possible_value = "local", possible_value = "federated", possible_value = "user")]
     pub timeline: String,
+
+    #[structopt(long = "namespace", help = "Prometheus metrics namespace (prefix)",
+                default_value = "mastodon")]
+    pub namespace: String,
 }
 
 pub struct Args {
@@ -30,6 +34,7 @@ pub struct Args {
     pub access_token: String,
     pub bind_address: ::std::net::SocketAddr,
     pub endpoint: Endpoint,
+    pub namespace: String,
 }
 
 impl Args {
@@ -72,6 +77,7 @@ impl Args {
             access_token,
             bind_address,
             endpoint,
+            namespace: args.namespace,
         })
     }
 }
