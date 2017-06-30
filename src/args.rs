@@ -5,7 +5,7 @@ use structopt::StructOpt;
 #[derive(StructOpt, Debug)]
 struct ArgsOpt {
     #[structopt(long = "instance",
-                help = "Instance URL. If protocol is absent, `https` is assumed.")]
+                help = "Instance URL (if protocol is absent, `https` is assumed)")]
     pub instance_url: String,
 
     #[structopt(long = "token",
@@ -18,10 +18,11 @@ struct ArgsOpt {
     pub bind: String,
 
     #[structopt(short = "p", long = "port", help = "Server bind port for Prometheus metrics")]
-    pub port: u32,
+    pub port: u16,
 
-    #[structopt(long = "federated", help = "Use federated timeline instead of local")]
-    pub federated: bool,
+    #[structopt(long = "timeline", help = "Timeline type", default_value = "local",
+                possible_value = "local", possible_value = "federated", possible_value = "user")]
+    pub timeline: String,
 }
 
 pub struct Args {
@@ -59,10 +60,11 @@ impl Args {
             )
         }?;
 
-        let endpoint = if args.federated {
-            Endpoint::Federated
-        } else {
-            Endpoint::Local
+        let endpoint = match args.timeline.as_ref() {
+            "local" => Endpoint::Local,
+            "federated" => Endpoint::Federated,
+            "user" => Endpoint::User,
+            _ => bail!("timeline must be one of: [local, federated, user]"),
         };
 
         Ok(Args {
