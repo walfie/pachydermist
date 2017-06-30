@@ -50,24 +50,8 @@ quick_main!(|| -> Result<()> {
             Ok(())
         })
         .map_err(|e| {
+            // TODO: stderr
             println!("Server error: {}", e);
-        });
-
-    let timeline = client
-        .timeline(
-            &args.instance_url,
-            args.access_token,
-            olifants::timeline::Endpoint::Local,
-        )
-        .map_err(|e| Error::with_chain(e, "client error"))
-        .for_each(move |event| {
-            use olifants::timeline::Event::*;
-
-            if let Update(status) = event {
-                metrics.inc(status.account.acct)?;
-            }
-
-            Ok(())
         });
 
     println!("Connecting to stream at {}", args.instance_url);
@@ -77,5 +61,37 @@ quick_main!(|| -> Result<()> {
     );
 
     core.handle().spawn(server);
-    core.run(timeline).chain_err(|| "timeline failed")
+
+    // If the connection is dropped or an error occurs, wait and retry
+    loop {
+        let metrics_ref = metrics.clone();
+
+        let timeline = client
+            .timeline(
+                &args.instance_url,
+                args.access_token.clone(),
+                olifants::timeline::Endpoint::Local,
+            )
+            .map_err(|e| Error::with_chain(e, "client error"))
+            .for_each(move |event| {
+                use olifants::timeline::Event::*;
+
+                if let Update(status) = event {
+                    metrics_ref.inc(status.account.acct)?;
+                }
+
+                Ok(())
+            });
+
+        if let Err(e) = core.run(timeline) {
+            println!("Encountered error: {}", e);
+        }
+
+        let delay = ::std::time::Duration::from_secs(5);
+        println!("Retrying in 5 seconds...");
+        std::thread::sleep(delay);
+    }
+
+    // This needs to be here to satisfy the return type, even though it's unreachable
+    #[allow(unreachable_code)] Ok(())
 });
