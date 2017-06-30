@@ -1,0 +1,16 @@
+[package]
+authors = ["Walfie <walfington@gmail.com>"]
+name = "pachydermist"
+version = "0.1.0"
+
+[dependencies]
+error-chain = "0.10"
+futures = "0.1"
+prometheus = "0.2"
+structopt = "0.0.5"
+structopt-derive = "0.0.5"
+tokio-core = "0.1"
+
+[dependencies.olifants]
+git = "https://github.com/walfie/olifants"
+rev = "4a54d2ef5e7473fe84f8abdce3351db81db16750"
