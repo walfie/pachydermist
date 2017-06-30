@@ -1,4 +1,5 @@
 use error::*;
+use olifants::timeline::Endpoint;
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -18,12 +19,16 @@ struct ArgsOpt {
 
     #[structopt(short = "p", long = "port", help = "Server bind port for Prometheus metrics")]
     pub port: u32,
+
+    #[structopt(long = "federated", help = "Use federated timeline instead of local")]
+    pub federated: bool,
 }
 
 pub struct Args {
     pub instance_url: String,
     pub access_token: String,
     pub bind_address: ::std::net::SocketAddr,
+    pub endpoint: Endpoint,
 }
 
 impl Args {
@@ -54,10 +59,17 @@ impl Args {
             )
         }?;
 
+        let endpoint = if args.federated {
+            Endpoint::Federated
+        } else {
+            Endpoint::Local
+        };
+
         Ok(Args {
             instance_url,
             access_token,
             bind_address,
+            endpoint,
         })
     }
 }

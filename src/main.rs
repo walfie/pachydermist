@@ -75,7 +75,7 @@ quick_main!(|| -> Result<()> {
             .timeline(
                 &args.instance_url,
                 args.access_token.clone(),
-                olifants::timeline::Endpoint::Local,
+                args.endpoint.clone(),
             )
             .map_err(|e| Error::with_chain(e, "client error"))
             .for_each(move |event| {
