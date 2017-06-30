@@ -28,7 +28,12 @@ const CRATE_NAME: &'static str = env!("CARGO_PKG_NAME");
 quick_main!(|| -> Result<()> {
     let args = Args::init()?;
 
-    let metrics = Rc::new(Metrics::create(CRATE_NAME, &args.instance_url).chain_err(
+    let short_instance_url = args.instance_url
+        .trim_left_matches("https://")
+        .trim_left_matches("http://")
+        .to_string();
+
+    let metrics = Rc::new(Metrics::create(CRATE_NAME, short_instance_url).chain_err(
         || "metrics initialization failed",
     )?);
 
@@ -77,7 +82,7 @@ quick_main!(|| -> Result<()> {
                 use olifants::timeline::Event::*;
 
                 if let Update(status) = event {
-                    metrics_ref.inc(status.account.acct)?;
+                    metrics_ref.inc(&status.account.acct)?;
                 }
 
                 Ok(())
@@ -87,6 +92,7 @@ quick_main!(|| -> Result<()> {
             println!("Encountered error: {}", e);
         }
 
+        // TODO: Exponential backoff
         let delay = ::std::time::Duration::from_secs(5);
         println!("Retrying in 5 seconds...");
         std::thread::sleep(delay);
