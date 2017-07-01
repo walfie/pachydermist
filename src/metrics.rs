@@ -3,39 +3,40 @@ use futures::{self, IntoFuture};
 use hyper;
 use hyper::header::ContentLength;
 use hyper::server::{Request, Response, Service};
-use prometheus::{self, CounterVec, Encoder, Registry, TextEncoder};
+use prometheus::{self, Encoder, GaugeVec, Registry, TextEncoder};
 
 pub struct Metrics {
     registry: Registry,
     encoder: TextEncoder,
-    counters: CounterVec,
+    gauges: GaugeVec,
     default_domain: String,
 }
 
 impl Metrics {
     pub fn create(namespace: &str, default_domain: String) -> Result<Self> {
-        let counter_opts = prometheus::Opts::new("statuses_total", "Number of statuses posted")
+        let gauge_opts = prometheus::Opts::new("statuses_total", "Number of statuses posted")
             .namespace(namespace)
             .variable_label("domain")
             .variable_label("username");
 
-        let counters = CounterVec::new(counter_opts, &["domain", "username"])
-            .chain_err(|| "failed to create Counter")?;
+        let gauges = GaugeVec::new(gauge_opts, &["domain", "username"])
+            .chain_err(|| "failed to create Gauge")?;
 
         let registry = Registry::new();
-        registry.register(Box::new(counters.clone())).unwrap();
+        registry.register(Box::new(gauges.clone())).unwrap();
         let encoder = TextEncoder::new();
 
         Ok(Metrics {
             registry,
             encoder,
-            counters,
+            gauges,
             default_domain,
         })
     }
 
-    pub fn inc(&self, username: &str) -> Result<()> {
-        let mut parts = username.splitn(2, '@');
+    pub fn set(&self, username: &str, status_count: f64) -> Result<()> {
+        let lower = username.to_lowercase();
+        let mut parts = lower.splitn(2, '@');
 
         let (user, domain): (&str, &str) = match (parts.next(), parts.next()) {
             (Some(user), None) => (user, &self.default_domain),
@@ -51,10 +52,10 @@ impl Metrics {
         };
 
         Ok(
-            self.counters
+            self.gauges
                 .get_metric_with_label_values(&[domain, user])
                 .chain_err(|| format!("failed to get metric for {}", username))?
-                .inc(),
+                .set(status_count),
         )
     }
 

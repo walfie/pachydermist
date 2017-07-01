@@ -81,7 +81,10 @@ quick_main!(|| -> Result<()> {
                 use olifants::timeline::Event::*;
 
                 if let Update(status) = event {
-                    metrics_ref.inc(&status.account.acct)?;
+                    metrics_ref.set(
+                        &status.account.acct,
+                        status.account.statuses_count as f64,
+                    )?;
                 }
 
                 Ok(())
