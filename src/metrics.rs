@@ -9,17 +9,17 @@ pub struct Metrics {
     registry: Registry,
     encoder: TextEncoder,
     counters: CounterVec,
-    default_instance: String,
+    default_domain: String,
 }
 
 impl Metrics {
-    pub fn create(namespace: &str, default_instance: String) -> Result<Self> {
+    pub fn create(namespace: &str, default_domain: String) -> Result<Self> {
         let counter_opts = prometheus::Opts::new("statuses_total", "Number of statuses posted")
             .namespace(namespace)
-            .variable_label("instance")
+            .variable_label("domain")
             .variable_label("username");
 
-        let counters = CounterVec::new(counter_opts, &["instance", "username"])
+        let counters = CounterVec::new(counter_opts, &["domain", "username"])
             .chain_err(|| "failed to create Counter")?;
 
         let registry = Registry::new();
@@ -30,16 +30,16 @@ impl Metrics {
             registry,
             encoder,
             counters,
-            default_instance,
+            default_domain,
         })
     }
 
     pub fn inc(&self, username: &str) -> Result<()> {
         let mut parts = username.splitn(2, '@');
 
-        let (user, instance): (&str, &str) = match (parts.next(), parts.next()) {
-            (Some(user), None) => (user, &self.default_instance),
-            (Some(user), Some(instance)) => (user, instance),
+        let (user, domain): (&str, &str) = match (parts.next(), parts.next()) {
+            (Some(user), None) => (user, &self.default_domain),
+            (Some(user), Some(domain)) => (user, domain),
             other => {
                 // This should theoretically never happen
                 bail!(format!(
@@ -52,7 +52,7 @@ impl Metrics {
 
         Ok(
             self.counters
-                .get_metric_with_label_values(&[instance, user])
+                .get_metric_with_label_values(&[domain, user])
                 .chain_err(|| format!("failed to get metric for {}", username))?
                 .inc(),
         )
