@@ -17,10 +17,11 @@ impl Metrics {
         let gauge_opts = prometheus::Opts::new("statuses_total", "Number of statuses posted")
             .namespace(namespace)
             .variable_label("domain")
-            .variable_label("username");
+            .variable_label("user");
 
-        let gauges = GaugeVec::new(gauge_opts, &["domain", "username"])
-            .chain_err(|| "failed to create Gauge")?;
+        let gauges = GaugeVec::new(gauge_opts, &["domain", "user"]).chain_err(
+            || "failed to create Gauge",
+        )?;
 
         let registry = Registry::new();
         registry.register(Box::new(gauges.clone())).unwrap();
