@@ -14,4 +14,4 @@ tokio-core = "0.1"
 
 [dependencies.olifants]
 git = "https://github.com/walfie/olifants"
-rev = "4a54d2ef5e7473fe84f8abdce3351db81db16750"
+rev = "3632bb1d8b35dafbf9cfff84da3f69890e61c3f3"
